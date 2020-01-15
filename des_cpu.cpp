@@ -324,10 +324,10 @@ uint64_t encrypt(uint64_t key, uint64_t message)
 	return des_encrypt_56(kplus, message);
 }
 
-uint64_t crack(uint64_t message, uint64_t cipher)
+uint64_t crack(uint64_t message, uint64_t cipher, uint64_t start, uint64_t limit)
 {
-	uint64_t key = 0;
-	for(;;key++)
+	uint64_t key = start;
+	for(;key < limit;key++)
 	{
 		uint64_t encrypted = des_encrypt_56(key, message);
 		if(encrypted == cipher)

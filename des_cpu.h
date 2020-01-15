@@ -4,7 +4,8 @@ namespace des_cpu
 {
 	uint64_t decrypt(uint64_t key, uint64_t message);
 	uint64_t encrypt(uint64_t key, uint64_t message);
-	uint64_t crack(uint64_t message, uint64_t cipher);
+	uint64_t crack(uint64_t message, uint64_t cipher,
+            uint64_t start, uint64_t limit);
 
 	uint64_t permute_drop_parity(uint64_t key);
 	uint64_t rev_permute_add_parity(uint64_t kplus);

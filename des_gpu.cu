@@ -5,7 +5,7 @@
 
 #include <helper_cuda.h>
 
-uint64_t des_gpu_crack(uint64_t message, uint64_t cipher, uint64_t start)
+uint64_t des_gpu_crack(uint64_t message, uint64_t cipher, uint64_t start, uint64_t limit)
 {
     bool h_done, *d_done;
     checkCudaErrors(cudaMalloc((void**)&d_done,sizeof(bool)));
@@ -19,7 +19,7 @@ uint64_t des_gpu_crack(uint64_t message, uint64_t cipher, uint64_t start)
     //while(!h_done)
     //{
         des_gpu_crack_kernel<<<num_of_blocks, block_size>>>(message, cipher,
-                start,1000000000, d_done, d_key);
+                start,limit, d_done, d_key);
         checkCudaErrors(cudaMemcpy(&h_done, d_done, sizeof(bool), cudaMemcpyDeviceToHost));
     //    start += num_of_blocks * block_size;
     //}
