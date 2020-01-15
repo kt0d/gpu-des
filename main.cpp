@@ -1,20 +1,22 @@
 #include <iostream>
 #include <cstdint>
 #include "des_cpu.h"
+#include "des_gpu.cuh"
 
 int main(int argc, char **argv)
 {
 	using namespace std;
 	uint64_t message = 0x0123456789ABCDEF;
 	uint64_t key = 0x133457799BBCDFF1;
-	key = des_cpu::rev_permute_add_parity(1000000);
+	key = des_cpu::rev_permute_add_parity(100000000);
 	cout << hex << key << endl;
 	cout << hex << message << endl;
 
 	auto encrypted = des_cpu::encrypt(key, message);
 	cout << hex << encrypted << endl;
 	cout << hex << des_cpu::decrypt(key, encrypted) << endl;
-	cout << hex << des_cpu::crack(message, encrypted) << endl;
+	//cout << hex << des_cpu::crack(message, encrypted) << endl;
+    cout << hex << des_gpu_crack(message, encrypted, 0) << endl;
 	return 0;
 }
 
