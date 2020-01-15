@@ -1,25 +1,111 @@
 #include <iostream>
+#include <iomanip>
 #include <cstdint>
+#include <cstdlib>
+#include <argp.h>
+
 #include "des_cpu.h"
 #include "des_gpu.cuh"
 
+struct arguments
+{
+    bool set_key = false;
+    uint64_t key = 0;
+    bool set_limit = false;
+    uint64_t limit = 0;
+    bool run_gpu = false;
+    bool run_cpu = false;
+};
+
+static char doc[] = "gpu-des - DES cracking tool for CUDA";
+
+static struct argp_option options[] =
+{
+    {"limit",       'l', "L", 0,
+        "Exclusive upper bound for key space search. Interpreted as 56 bit wide key after PC-1 permutation.", 0},
+    {"key",         'k', "K", 0,
+        "Key to crack. Interpreted as 56 bit wide key after PC-1 permutation.", 0},
+    {"gpu",         'g', 0, 0,
+        "Run DES cracking on GPU", 1},
+    {"cpu",         'c', 0, 0,
+        "Run DES cracking on CPU", 1},
+	{0, 0, 0, 0, 0, 0}
+};
+
+static error_t parse_opt(int key, char* arg, struct argp_state *state);
+
+static struct argp argp = { options, parse_opt, nullptr, doc, nullptr, nullptr, nullptr};
+
 int main(int argc, char **argv)
 {
+	arguments args;
+	argp_parse(&argp, argc, argv, 0, 0, &args);
+
 	using namespace std;
 	uint64_t message = 0x0123456789ABCDEF;
-	uint64_t key = 0x133457799BBCDFF1;
-	key = des_cpu::rev_permute_add_parity(100000000);
-	cout << hex << key << endl;
-	cout << hex << message << endl;
+    uint64_t key56 = args.set_key ?
+        args.key : 1000000;
+	uint64_t key = des_cpu::rev_permute_add_parity(key56);
+    uint64_t limit = args.set_limit ?
+        args.limit : (key56 + 1);
 
+	cout << left << setw(16) << "Key:"
+        << "0x" << setfill('0') << setw(16) << hex << key << endl;
+	cout << left << setfill(' ') <<  setw(16) << "Message:"
+        << "0x" << setfill('0') << setw(16) << hex << message << endl;
 	auto encrypted = des_cpu::encrypt(key, message);
-	cout << hex << encrypted << endl;
-	cout << hex << des_cpu::decrypt(key, encrypted) << endl;
-	//cout << hex << des_cpu::crack(message, encrypted) << endl;
-    cout << hex << des_gpu_crack(message, encrypted, 0) << endl;
+	cout << left << setfill(' ') << setw(16) << "Encrypted:"
+        << "0x" << setfill('0') << setw(16) << hex << encrypted << endl;
+	cout << left << setfill(' ') << setw(16) << "Decrypted:" 
+        << "0x" << setfill('0') << setw(16) << hex << des_cpu::decrypt(key, encrypted) << endl;
+    if(args.run_cpu)
+    {
+        auto cracked = des_cpu::crack(message, encrypted, 0, limit);
+	    cout << left << setfill(' ') << setw(16) << "Cracked (CPU):"
+            << "0x" << setfill('0') << setw(16) << hex << cracked << endl;
+    }
+    if(args.run_gpu)
+    {
+        auto cracked = des_gpu_crack(message, encrypted, 0, limit);
+	    cout << left << setfill(' ') << setw(16) << "Cracked (GPU):"
+            << "0x" << setfill('0') << setw(16) << hex << cracked << endl;
+    }
 	return 0;
 }
 
+static error_t parse_opt(int key, char* arg, struct argp_state *state)
+{
+	arguments *args = (arguments*)state->input;
+
+	switch(key)
+	{
+		case 'l':
+            if(arg[1] == 'x')
+                args->limit = strtoull(arg, nullptr, 16);
+            else
+                args->limit = strtoull(arg, nullptr, 10);
+            args->set_limit = true;
+			break;
+		case 'k':
+            if(arg[1] == 'x')
+                args->key = strtoull(arg, nullptr, 16);
+            else
+                args->key = strtoull(arg, nullptr, 10);
+            args->set_key = true;
+			break;
+		case 'g':
+            args->run_gpu = true;
+			break;
+		case 'c':
+            args->run_cpu = true;
+			break;
+        case ARGP_KEY_END:
+            break;
+		default:
+			return ARGP_ERR_UNKNOWN;
+	}
+	return 0;
+}
 /*
  * OpenSSL DES
 //#include <openssl/des.h>
