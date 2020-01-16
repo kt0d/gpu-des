@@ -222,20 +222,27 @@ uint64_t des_encrypt_56(uint64_t key56, uint64_t message)
 }
 
 __global__ void des_gpu_crack_kernel(uint64_t message, uint64_t cipher, 
-        uint64_t start, uint64_t limit, bool* d_done, uint64_t *d_key)
+        uint64_t start, uint64_t limit, bool* d_done, uint64_t *d_key, int* d_counters)
 {
         uint64_t key = start + blockIdx.x * blockDim.x + threadIdx.x;
+	uint32_t count = 0;
         while(key < limit && !(*d_done))
         {
         //printf("%lld\n",key);
             uint64_t encrypted = des_encrypt_56(key, message);
+	    count++;
             if(encrypted == cipher)
             {
                 *d_key = key;
                 *d_done = true;
                 //printf("%d\n", *d_done);
-                return;
+		break;
             }
             key += gridDim.x * blockDim.x;
         }
+	if(threadIdx.x % warpSize == 0)
+	{
+		size_t index = (blockIdx.x * blockDim.x + threadIdx.x) / warpSize;
+		d_counters[index] = count * warpSize;
+	}
 }
