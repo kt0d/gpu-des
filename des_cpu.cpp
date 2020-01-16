@@ -1,6 +1,7 @@
 #include "des_cpu.h"
 #include "bit_utils.h"
 #include <cstdint>
+#include <chrono>
 
 namespace des_cpu
 {
@@ -324,15 +325,39 @@ uint64_t encrypt(uint64_t key, uint64_t message)
 	return des_encrypt_56(kplus, message);
 }
 
-uint64_t crack(uint64_t message, uint64_t cipher, uint64_t start, uint64_t limit)
+des_result crack(uint64_t message, uint64_t cipher, uint64_t begin, uint64_t limit)
 {
-	uint64_t key = start;
-	for(;key < limit;key++)
+	uint64_t key = begin;
+	unsigned long long count = 0;
+	bool done = false;
+
+	const auto start = std::chrono::system_clock::now();
+
+	for(;key < limit && !done; key++)
 	{
 		uint64_t encrypted = des_encrypt_56(key, message);
+		count++;
 		if(encrypted == cipher)
-			return rev_permute_add_parity(key);
+		{
+			done = true;
+		}
 	}
-	return 0;
+
+	// Stop time measurement.
+	const auto stop = std::chrono::system_clock::now();
+
+	// Calculate elapsed time.
+	const std::chrono::duration<float, std::milli> diff = stop - start;
+	
+	des_result result;
+	result.found = done;
+	result.checked = count;
+	result.time = diff.count();
+	if(result.found)
+	{
+		result.key = rev_permute_add_parity(key);
+	}
+
+	return result;
 }
 }
