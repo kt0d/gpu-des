@@ -49,7 +49,6 @@ des_result des_gpu_crack(uint64_t message, uint64_t cipher, uint64_t begin, uint
     // Compute total checked keys.
     auto sum = thrust::reduce(d_vec.begin(), d_vec.end(), (unsigned long long)(0));
 
-
     checkCudaErrors(cudaMemcpy(&h_done, d_done, sizeof(bool), cudaMemcpyDeviceToHost));
 
     des_result result;
@@ -59,7 +58,7 @@ des_result des_gpu_crack(uint64_t message, uint64_t cipher, uint64_t begin, uint
     if(result.found)
     {
         checkCudaErrors(cudaMemcpy(&h_key, d_key, sizeof(h_key), cudaMemcpyDeviceToHost));
-	result.key = des_cpu::rev_permute_add_parity(h_key);
+        result.key = des_cpu::rev_permute_add_parity(h_key);
     }
 
     checkCudaErrors(cudaFree(d_done));
