@@ -8,7 +8,8 @@
 #include <thrust/device_vector.h>
 #include <helper_cuda.h>
 
-des_result des_gpu_crack(uint64_t message, uint64_t cipher, uint64_t begin, uint64_t limit)
+des_result des_gpu_crack(uint64_t message, uint64_t cipher, uint64_t begin, 
+        uint64_t limit, size_t num_of_blocks, size_t block_size)
 {
     bool h_done, *d_done;
     checkCudaErrors(cudaMalloc((void**)&d_done,sizeof(bool)));
@@ -17,9 +18,6 @@ des_result des_gpu_crack(uint64_t message, uint64_t cipher, uint64_t begin, uint
     uint64_t h_key = 0, *d_key;
     checkCudaErrors(cudaMalloc((void**)&d_key,sizeof(uint64_t)));
     checkCudaErrors(cudaMemset(d_key, 0, sizeof(h_key)));
-
-    const size_t num_of_blocks = 1024;
-    const size_t block_size = 512;
 
     // Vector for counting checked keys.
     thrust::device_vector<int> d_vec(num_of_blocks * block_size / 32);

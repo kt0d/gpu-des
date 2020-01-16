@@ -10,6 +10,8 @@
 
 struct arguments
 {
+    size_t blocks = 0;
+    size_t threads = 0;
     bool print = false;
     bool set_key = false;
     uint64_t key = 0;
@@ -24,7 +26,7 @@ struct arguments
 };
 
 static char doc[] = "gpu-des - DES cracking tool for CUDA\v"
-"Numeric arguments can be provided as either decimals or hexadecimals prefixed with \"0x\".";
+"Numeric arguments,  other than thread and block count, can be provided as either decimals or hexadecimals prefixed with \"0x\".";
 
 static struct argp_option options[] =
 {
@@ -42,6 +44,10 @@ static struct argp_option options[] =
         "Run DES cracking on CPU", 1},
     {"print",       'p', 0, 0,
         "Print initial encryption and decryption output", 5},
+    {"blocks",      'T', "N", 0,
+        "Number of CUDA thread blocks to run", 6},
+    {"threads",     't', "N", 0,
+        "Number of threads in Cuda thread block", 6},
     {0, 0, 0, 0, 0, 0}
 };
 
@@ -96,6 +102,8 @@ int main(int argc, char **argv)
     uint64_t begin = args.set_begin ?
         args.begin : 0;
 
+    size_t threads = args.threads ? args.threads : 1024;
+    size_t blocks = args.blocks ? args.blocks : 2048;
     auto encrypted = des_cpu::encrypt(key, message);
     
     print_hex_number("Key:", key);
@@ -112,7 +120,8 @@ int main(int argc, char **argv)
     }
     if(args.run_gpu)
     {
-        des_result gpu_result = des_gpu_crack(message, encrypted, begin, limit);
+        des_result gpu_result = des_gpu_crack(message, encrypted, begin, limit, 
+                blocks, threads);
         print_result("Cracked (GPU):", gpu_result);
     }
     return 0;
@@ -160,6 +169,14 @@ static error_t parse_opt(int key, char* arg, struct argp_state *state)
             break;
         case 'p':
             args->print = true;
+            break;
+        case 'T':
+            args->blocks = strtoull(arg, nullptr,10);
+            break;
+        case 't':
+            args->threads = strtoull(arg, nullptr,10);
+            if(args->threads > 1024)
+			    argp_error(state,  "Maximum number of threads in block is 1024");
             break;
         case ARGP_KEY_END:
             break;
