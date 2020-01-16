@@ -18,16 +18,16 @@ debug: ${TARGET}
 
 OBJECTS = main.o des_cpu.o des_gpu.o des_kernels.o
 
-des_gpu.o: des_gpu.cu des_gpu.cuh des_kernels.cuh
+des_gpu.o: des_gpu.cu des_gpu.cuh des_kernels.cuh common.h
 	${NVCC} ${INCLUDES} ${DEBUG} ${GENCODE_FLAGS} ${CUDA_COMPILER_OPTIONS} -c $< -o $@
 
 des_kernels.o: des_kernels.cu des_kernels.cuh
 	${NVCC} ${INCLUDES} ${DEBUG} ${GENCODE_FLAGS} ${CUDA_COMPILER_OPTIONS} -c $< -o $@
 
-des_cpu.o: des_cpu.cpp des_cpu.h bit_utils.h
+des_cpu.o: des_cpu.cpp des_cpu.h bit_utils.h common.h
 	${NVCC} ${INCLUDES} ${DEBUG} ${GENCODE_FLAGS} ${CUDA_COMPILER_OPTIONS} -c $< -o $@
 
-main.o: main.cpp des_cpu.h des_gpu.cuh
+main.o: main.cpp des_cpu.h des_gpu.cuh common.h
 	${NVCC} ${INCLUDES} ${GENCODE_FLAGS} ${CUDA_COMPILER_OPTIONS} -c $< -o $@
 
 ${TARGET}: ${OBJECTS}
