@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <argp.h>
 
+#include "common.h"
 #include "des_cpu.h"
 #include "des_gpu.cuh"
 
@@ -37,6 +38,37 @@ static error_t parse_opt(int key, char* arg, struct argp_state *state);
 
 static struct argp argp = { options, parse_opt, nullptr, doc, nullptr, nullptr, nullptr};
 
+void print_hex_number(const char* label, uint64_t num)
+{
+	using namespace std;
+	cout << left << setfill(' ') << setw(16) << label
+        << "0x" << setfill('0') << setw(16) << hex << num << endl;
+}
+
+void print_result(const char* label, des_result result)
+{
+	using namespace std;
+	cout << left << setfill(' ') << setw(16) << label;
+	if(result.found)
+	{
+		cout << "0x" << setfill('0') << setw(16) << hex << result.key;
+	}
+	else
+	{
+		cout << setfill(' ') << setw(16+2) << right <<  "NOT FOUND";
+	}
+	cout << setfill(' ')
+		<< right << setw(16) << dec << result.checked << left << " keys in ";
+	bool print_ms = result.time < 10000.0;
+	cout << setw(7) << right << fixed << setprecision(2);
+	if(print_ms)
+		cout << result.time << "ms ";
+	else
+		cout << result.time / 1000 << "s ";
+	auto throughput = (result.checked/ ((double)result.time / 1000)) / 1000000;;
+	cout << "(throughput: " << throughput << "M/s)" << endl;
+}
+
 int main(int argc, char **argv)
 {
 	arguments args;
@@ -50,26 +82,20 @@ int main(int argc, char **argv)
     uint64_t limit = args.set_limit ?
         args.limit : (key56 + 1);
 
-	cout << left << setw(16) << "Key:"
-        << "0x" << setfill('0') << setw(16) << hex << key << endl;
-	cout << left << setfill(' ') <<  setw(16) << "Message:"
-        << "0x" << setfill('0') << setw(16) << hex << message << endl;
+    	print_hex_number("Key:", key);
+	print_hex_number("Message:", message);
 	auto encrypted = des_cpu::encrypt(key, message);
-	cout << left << setfill(' ') << setw(16) << "Encrypted:"
-        << "0x" << setfill('0') << setw(16) << hex << encrypted << endl;
-	cout << left << setfill(' ') << setw(16) << "Decrypted:" 
-        << "0x" << setfill('0') << setw(16) << hex << des_cpu::decrypt(key, encrypted) << endl;
+	print_hex_number("Encrypted:", encrypted);
+	print_hex_number("Decrypted:", des_cpu::decrypt(key, encrypted));
     if(args.run_cpu)
     {
-        auto cracked = des_cpu::crack(message, encrypted, 0, limit);
-	    cout << left << setfill(' ') << setw(16) << "Cracked (CPU):"
-            << "0x" << setfill('0') << setw(16) << hex << cracked << endl;
+        des_result cpu_result = des_cpu::crack(message, encrypted, 0, limit);
+	print_result("Cracked (CPU):", cpu_result);
     }
     if(args.run_gpu)
     {
-        auto cracked = des_gpu_crack(message, encrypted, 0, limit);
-	    cout << left << setfill(' ') << setw(16) << "Cracked (GPU):"
-            << "0x" << setfill('0') << setw(16) << hex << cracked << endl;
+        des_result gpu_result = des_gpu_crack(message, encrypted, 0, limit);
+	print_result("Cracked (GPU):", gpu_result);
     }
 	return 0;
 }
