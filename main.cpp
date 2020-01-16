@@ -17,7 +17,8 @@ struct arguments
     bool run_cpu = false;
 };
 
-static char doc[] = "gpu-des - DES cracking tool for CUDA";
+static char doc[] = "gpu-des - DES cracking tool for CUDA\v"
+    "Numeric arguments can be provided as either decimals or hexadecimals prefixed with \"0x\".";
 
 static struct argp_option options[] =
 {

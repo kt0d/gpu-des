@@ -16,6 +16,14 @@ uint64_t des_gpu_crack(uint64_t message, uint64_t cipher, uint64_t start, uint64
 
     const size_t num_of_blocks = 1024;
     const size_t block_size = 512;
+
+	cudaEvent_t start, stop;
+	cudaEventCreate(&start);
+	cudaEventCreate(&stop);
+
+    cudaEventRecord(start);
+	cudaEventSynchronize(start);
+
     //while(!h_done)
     //{
         des_gpu_crack_kernel<<<num_of_blocks, block_size>>>(message, cipher,
@@ -25,5 +33,14 @@ uint64_t des_gpu_crack(uint64_t message, uint64_t cipher, uint64_t start, uint64
     //}
     if(!h_done) return 0;
     checkCudaErrors(cudaMemcpy(&h_key, d_key, sizeof(h_key), cudaMemcpyDeviceToHost));
+
+	cudaEventRecord(stop);
+	cudaEventSynchronize(stop);
+	float miliseconds = 0;
+	cudaEventElapsedTime(&miliseconds, start, stop);
+	cudaEventDestroy(start);
+	cudaEventDestroy(stop);
+    std::cout << miliseconds << std::endl;
+
 	return des_cpu::rev_permute_add_parity(h_key);
 }
