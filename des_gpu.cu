@@ -108,7 +108,7 @@ des_result multi_gpu_crack(uint64_t message, uint64_t cipher, uint64_t begin,
     {
 	checkCudaErrors(cudaSetDevice(i));
     	multi_gpu_crack_kernel<<<num_of_blocks, block_size>>>(message, cipher,
-		    begin,limit, d_done, d_key, d_counters_ptr[i], gpu_count);
+		    begin,limit, d_done, d_key, d_counters_ptr[i], gpu_count, i);
     }
 
     float max_time = 0;

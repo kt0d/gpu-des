@@ -249,9 +249,10 @@ __global__ void des_gpu_crack_kernel(uint64_t message, uint64_t cipher,
 
 __global__ void multi_gpu_crack_kernel(uint64_t message, uint64_t cipher, 
         uint64_t begin, uint64_t limit, bool* d_done, uint64_t *d_key, int* d_counters,
-	unsigned short gpu_count)
+	unsigned short gpu_count, unsigned short current_gpu)
 {
-    uint64_t key = begin + blockIdx.x * blockDim.x + threadIdx.x;
+    uint64_t key = begin + blockIdx.x * blockDim.x + threadIdx.x 
+        + current_gpu * gridDim.x * blockDim.x;
     uint32_t count = 0;
     while(key < limit && !(*d_done))
     {
