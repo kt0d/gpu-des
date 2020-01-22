@@ -23,6 +23,7 @@ struct arguments
     uint64_t message = 0;
     bool run_gpu = false;
     bool run_cpu = false;
+    bool run_multi_gpu = false;
 };
 
 static char doc[] = "gpu-des - DES cracking tool for CUDA\v"
@@ -40,6 +41,8 @@ static struct argp_option options[] =
         "Key to start search with. Interpreted as 56 bit wide key after PC-1 permutation.", 4},
     {"gpu",         'g', 0, 0,
         "Run DES cracking on GPU", 1},
+    {"multi-gpu",         'm', 0, 0,
+        "Run DES cracking on multiple GPU, if available", 1},
     {"cpu",         'c', 0, 0,
         "Run DES cracking on CPU", 1},
     {"print",       'p', 0, 0,
@@ -124,6 +127,12 @@ int main(int argc, char **argv)
                 blocks, threads);
         print_result("Cracked (GPU):", gpu_result);
     }
+    if(args.run_multi_gpu)
+    {
+        des_result gpu_result = multi_gpu_crack(message, encrypted, begin, limit, 
+                blocks, threads);
+        print_result("Cracked (multi-GPU):", gpu_result);
+    }
     return 0;
 }
 
@@ -149,6 +158,9 @@ static error_t parse_opt(int key, char* arg, struct argp_state *state)
             break;
         case 'g':
             args->run_gpu = true;
+            break;
+        case 'n':
+            args->run_multi_gpu = true;
             break;
         case 'c':
             args->run_cpu = true;
