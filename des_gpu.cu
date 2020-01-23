@@ -7,6 +7,8 @@
 #include <cstdint>
 
 #include <thrust/device_vector.h>
+#include <thrust/device_malloc.h>
+#include <thrust/device_free.h>
 #include <helper_cuda.h>
 
 
@@ -83,13 +85,13 @@ des_result multi_gpu_crack(uint64_t message, uint64_t cipher, uint64_t begin,
     checkCudaErrors(cudaGetDeviceCount(&gpu_count));
 
     // Vector for counting checked keys, for every GPU.
-    std::vector<thrust::device_vector<int>> counters;
+    std::vector<thrust::device_ptr<int>> counters;
     std::vector<int*> d_counters_ptr;
     for(int i = 0; i < gpu_count; i++)
     {
 	checkCudaErrors(cudaSetDevice(i));
-	counters.emplace_back(num_of_blocks * block_size / 32);
-	d_counters_ptr.push_back(thrust::raw_pointer_cast(counters[i].data()));
+	counters.push_back(thrust::device_malloc<int>(sizeof(int) * num_of_blocks * block_size / 32));
+	d_counters_ptr.push_back(thrust::raw_pointer_cast(counters[i]));
     }
 
     std::vector<cudaEvent_t> start(gpu_count), stop(gpu_count);
@@ -133,9 +135,10 @@ des_result multi_gpu_crack(uint64_t message, uint64_t cipher, uint64_t begin,
     for(int i = 0; i < gpu_count; i++)
     {
 	checkCudaErrors(cudaSetDevice(i));
-    	auto sum = thrust::reduce(counters[i].begin(), counters[i].end(), 
+    	auto sum = thrust::reduce(counters[i], counters[i] + num_of_blocks*block_size / 32, 
 			(unsigned long long)(0));
 	total_sum += sum;
+	thrust::device_free(counters[i]);
 
     }
 
